@@ -2,7 +2,7 @@
 
 Smol is a retro-inspired fantasy game console.
 This repository contains the source code for the Smol assembler,
-an assembler which produces binaries using the Smol CPU architecture.
+an assembler which produces binaries using the [Smol CPU architecture](https://github.com/Suirabu/smol-emu/blob/06887793308d7268502e9fe4802ac34713d1956c/docs/cpu_arch.md).
 
 See also
 - [SmolEmu](https://github.com/Suirabu/smol-emu)
