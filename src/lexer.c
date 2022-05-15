@@ -45,7 +45,7 @@ static void append_token(Lexer* lexer, Token token) {
 
 // Returns false on failure to collect a token, otherwise true
 static bool collect_token(Lexer* lexer) {
-    char lexemme[256];
+    char lexemme[MAX_LEXEMME_LEN];
     size_t lp = 0;
 
     while(!reached_end(lexer) && !isspace(peek(lexer))) {

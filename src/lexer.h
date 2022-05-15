@@ -5,6 +5,8 @@
 
 #include "token.h"
 
+#define MAX_LEXEMME_LEN 256
+
 typedef struct {
     char* source;
     size_t sp;
