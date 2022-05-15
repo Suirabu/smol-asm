@@ -1,5 +1,7 @@
+#include <stdbool.h>
 #include <string.h>
 
+#include "error.h"
 #include "token.h"
 
 typedef struct {
@@ -41,6 +43,11 @@ static TypeStringPair type_string_pairs[] = {
 };
 const size_t type_string_pairs_len = sizeof(type_string_pairs) / sizeof(TypeStringPair);
 
+static bool is_label(const char* lexemme) {
+    const size_t lexemme_len = strlen(lexemme);
+    return lexemme[lexemme_len - 1] == ':';
+}
+
 TokenType token_type_from_string(const char* str) {
     for(size_t i = 0; i < type_string_pairs_len; ++i) {
         const char* pair_str = type_string_pairs[i].str;
@@ -49,7 +56,7 @@ TokenType token_type_from_string(const char* str) {
         }
     }
 
-    return TOK_UNKNOWN;
+    return is_label(str) ? TOK_LABEL : TOK_IDENTIFIER;
 }
 
 const char* token_string_from_type(TokenType type) {

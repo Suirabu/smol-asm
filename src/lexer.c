@@ -83,23 +83,20 @@ static bool collect_token(Lexer* lexer) {
 
     TokenType type = token_type_from_string(lexemme);
     
-    // Possibly a label?
-    if(type == TOK_UNKNOWN) {
-        const size_t lexemme_len = strlen(lexemme);
+    if(type == TOK_LABEL || type == TOK_IDENTIFIER) {
+        // Subtract one from lexemme length if our token is a label, effectively chopping off the
+        // trailing colon
+        const size_t lexemme_len = strlen(lexemme) - (type == TOK_LABEL ? 1 : 0);
 
-        if(lexemme[lexemme_len - 1] != ':') {
-            REPORT_ERROR_AT_LINE("Invalid lexemme '%s'\n", lexer->line + 1, lexemme);
-            return false;
-        }
-
-        // Collect label
-        char* lexemme_buffer = malloc(lexemme_len);
+        // Collect identifier
+        char* lexemme_buffer = malloc(lexemme_len + 1);
         assert(lexemme_buffer != NULL);
-        assert(memcpy(lexemme_buffer, lexemme, lexemme_len - 1) != NULL);
-        lexemme_buffer[lexemme_len - 1] = '\0';
+
+        assert(memcpy(lexemme_buffer, lexemme, lexemme_len) != NULL);
+        lexemme_buffer[lexemme_len] = '\0';
 
         Token token = {
-            .type = TOK_LABEL,
+            .type = type,
             .str_val = lexemme_buffer,
             .line = lexer->line,
         };

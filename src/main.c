@@ -30,7 +30,9 @@ int main(int argc, char** argv) {
         Token token = *tokens++;
 
         if(token.type == TOK_LABEL) {
-            printf("Line %-4lu- '%s'\n", token.line + 1, token.str_val);
+            printf("Line %-4lu- label(\"%s\")\n", token.line + 1, token.str_val);
+        } else if(token.type == TOK_IDENTIFIER) {
+            printf("Line %-4lu- identifier(\"%s\")\n", token.line + 1, token.str_val);
         } else if(token.type == TOK_PUSH) {
             printf("Line %-4lu- push(%u)\n", token.line + 1, token.int_val);
         } else {

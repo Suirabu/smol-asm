@@ -9,6 +9,7 @@ typedef enum {
     TOK_UNKNOWN,
     TOK_EOF,
     TOK_LABEL,
+    TOK_IDENTIFIER,
 
     // Language keywords
     TOK_NOP,
