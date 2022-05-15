@@ -6,7 +6,7 @@
 
 typedef enum {
     // Meta types
-    TOK_NONE,
+    TOK_UNKNOWN,
     TOK_EOF,
     TOK_LABEL,
 

@@ -49,7 +49,7 @@ TokenType token_type_from_string(const char* str) {
         }
     }
 
-    return TOK_NONE;
+    return TOK_UNKNOWN;
 }
 
 const char* token_string_from_type(TokenType type) {

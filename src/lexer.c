@@ -84,7 +84,7 @@ static bool collect_token(Lexer* lexer) {
     TokenType type = token_type_from_string(lexemme);
     
     // Possibly a label?
-    if(type == TOK_NONE) {
+    if(type == TOK_UNKNOWN) {
         const size_t lexemme_len = strlen(lexemme);
 
         if(lexemme[lexemme_len - 1] != ':') {
