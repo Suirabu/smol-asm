@@ -37,21 +37,44 @@ static bool skip_whitespace(Lexer* lexer) {
     return !reached_end(lexer);
 }
 
+static bool skip_lexemme(Lexer* lexer) {
+    while(!reached_end(lexer) && !isspace(peek(lexer))) {
+        advance(lexer);
+    }
+
+    return !reached_end(lexer);
+}
+
 static void append_token(Lexer* lexer, Token token) {
     lexer->tokens = realloc(lexer->tokens, ++lexer->tokens_len * sizeof(Token));
     assert(lexer->tokens != NULL && "After reallocating tokens array");
     lexer->tokens[lexer->tokens_len - 1] = token;
 }
 
+static bool get_lexemme(Lexer* lexer, char lexemme[MAX_LEXEMME_LEN]) {
+    size_t lp = 0;
+
+    while(!reached_end(lexer) && !isspace(peek(lexer)) && lp < MAX_LEXEMME_LEN - 1) {
+        lexemme[lp++] = advance(lexer);
+    }
+
+    // Lexemme length surpassed our maximum lexemme length
+    if(lp == MAX_LEXEMME_LEN - 1) {
+        return false;
+    }
+
+    lexemme[lp] = '\0';
+    return true;
+}
+
 // Returns false on failure to collect a token, otherwise true
 static bool collect_token(Lexer* lexer) {
     char lexemme[MAX_LEXEMME_LEN];
-    size_t lp = 0;
-
-    while(!reached_end(lexer) && !isspace(peek(lexer))) {
-        lexemme[lp++] = advance(lexer);
+    if(!get_lexemme(lexer, lexemme)) {
+        REPORT_ERROR_AT_LINE("Lexemme surpassed maximum length of %u\n", lexer->line + 1, MAX_LEXEMME_LEN - 1);
+        skip_lexemme(lexer);
+        return false;
     }
-    lexemme[lp] = '\0';
 
     if(!isalpha(lexemme[0])) {
         REPORT_ERROR_AT_LINE("Invalid lexemme '%s'\n", lexer->line + 1, lexemme);
@@ -90,12 +113,11 @@ static bool collect_token(Lexer* lexer) {
             REPORT_ERROR_AT_LINE("Expected number after push operation, found end of file instead\n", lexer->line + 1);
         }
 
-        // Overwritting our lexemme here is fine since we already know our token's type
-        lp = 0;
-        while(!reached_end(lexer) && !isspace(peek(lexer))) {
-            lexemme[lp++] = advance(lexer);
+        if(!get_lexemme(lexer, lexemme)) {
+            REPORT_ERROR_AT_LINE("Lexemme surpassed maximum length of %u\n", lexer->line + 1, MAX_LEXEMME_LEN - 1);
+            skip_lexemme(lexer);
+            return false;
         }
-        lexemme[lp] = '\0';
         
         const size_t lexemme_len = strlen(lexemme);
         for(size_t i = 0; i < lexemme_len; ++i) {
