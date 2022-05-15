@@ -6,72 +6,56 @@
 #include "error.h"
 #include "token.h"
 
-uint8_t get_opcode_from_token_type(TokenType type) {
-    switch(type) {
-        case TOK_NOP:       return 0x00;
-        case TOK_DROP:      return 0x12;
-        case TOK_DUP:       return 0x13;
-        case TOK_SWAP:      return 0x14;
-        case TOK_OVER:      return 0x15;
-        case TOK_ROT:       return 0x16;
-        case TOK_STORE_8:   return 0x17;
-        case TOK_STORE_16:  return 0x18;
-        case TOK_LOAD_8:    return 0x19;
-        case TOK_LOAD_16:   return 0x1A;
-        case TOK_ADD:       return 0x20;
-        case TOK_SUB:       return 0x21;
-        case TOK_MULT:      return 0x22;
-        case TOK_DIV:       return 0x23;
-        case TOK_MOD:       return 0x24;
-        case TOK_AND:       return 0x30;
-        case TOK_OR:        return 0x31;
-        case TOK_NOT:       return 0x32;
-        case TOK_XOR:       return 0x33;
-        case TOK_SHIFTL:    return 0x34;
-        case TOK_SHIFTR:    return 0x35;
-        case TOK_CMP:       return 0x40;
-        case TOK_JMP:       return 0x41;
-        case TOK_JEQ:       return 0x42;
-        case TOK_JNE:       return 0x43;
-        case TOK_JLT:       return 0x44;
-        case TOK_JLE:       return 0x45;
-        case TOK_JGT:       return 0x46;
-        case TOK_JGE:       return 0x47;
-    }
-
-    assert(false && "Encountered token type with unknown opcode");
-}
-
 bool codegen_generate_binary(const char *output_path, Token *tokens) {
+    bool result = true;
+
     FILE* bin = fopen(output_path, "wb");
     if(!bin) {
         REPORT_ERROR("Failed to open file '%s' for writing\n", output_path);
-        return false;
+        goto cleanup_err;
     }
 
     while(tokens->type != TOK_EOF) {
-        Token token = *tokens++;
-        if(token.type == TOK_PUSH) {
-            // push16
-            if(token.int_val > 0xFF) {
-                assert(fputc(0x11, bin) != EOF);
-                assert(fwrite(&token.int_val, 2, 1, bin) == 1);
+        const Token token = *tokens++;
+        const TokenType type = token.type;
+
+        // Direct keyword
+        if(type < DIRECT_KEYWORD_END) {
+            assert(fputc(type, bin) != EOF);
+        } else if(type == TOK_PUSH) {
+            const Token number = *tokens++;
+
+            if(number.type != TOK_NUMBER) {
+                REPORT_ERROR_AT_LINE("Expected number literal after keyword 'push', found '%s' instead\n", number.line + 1, token_string_from_type(number.type));
+                goto cleanup_err;
             }
-            // push8
-            else {
-                assert(fputc(0x10, bin) != EOF);
-                // Avoid endianness issues
-                char val = token.int_val;
-                assert(fputc(val, bin) != EOF);
+
+            const TokenType op_type = number.int_val > 0xFF ? TOK_PUSH_16 : TOK_PUSH_8;
+            assert(fputc(op_type, bin) != EOF);
+
+            if(op_type == TOK_PUSH_8) {
+                uint8_t int_val = number.int_val;
+                assert(fputc(int_val, bin) != EOF);
+            } else {
+                uint8_t msb = (number.int_val & 0xFF00) >> 8;
+                uint8_t lsb = number.int_val & 0x00FF;
+                assert(fputc(msb, bin) != EOF);
+                assert(fputc(lsb, bin) != EOF);
             }
-        } else if(token.type == TOK_LABEL || token.type == TOK_IDENTIFIER) {
-            REPORT_ERROR("Label codegen has not been implemented yet!\n");
-            return false;
-        } else {
-            assert(fputc(get_opcode_from_token_type(token.type), bin) != EOF);
+        } else if(type == TOK_LABEL || type == TOK_IDENTIFIER) {
+            REPORT_ERROR("Labels have not yet been implemented\n");
+            goto cleanup_err;
+        } else if(type == TOK_NUMBER) {
+            REPORT_ERROR_AT_LINE("Encountered number literal '%u' outside of its proper context\n", token.line + 1, token.int_val);
+            goto cleanup_err;
         }
     }
 
-    fclose(bin);
-    return true;
+    goto cleanup;
+cleanup_err:
+    result = false;
+    if (bin) { remove(output_path); }
+cleanup:
+    if (bin) { fclose(bin); }
+    return result;
 }

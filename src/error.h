@@ -6,4 +6,7 @@
 #define REPORT_ERROR(...) \
     fprintf(stderr, "\033[31;1mError:\033[0m " __VA_ARGS__);
 
+#define REPORT_ERROR_AT_LINE(...) \
+    REPORT_ERROR("\033[33;1mline %lu:\033[0m " __VA_ARGS__)
+
 #endif // ERROR_H

@@ -1,16 +1,13 @@
 #include <assert.h>
 #include <ctype.h>
-#include <limits.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "error.h"
 #include "lexer.h"
 #include "token.h"
-
-#define REPORT_ERROR_AT_LINE(...) \
-    REPORT_ERROR("\033[33;1mline %lu:\033[0m " __VA_ARGS__)
 
 static char peek(Lexer* lexer) {
     return lexer->source[lexer->sp];
@@ -76,13 +73,13 @@ static bool collect_token(Lexer* lexer) {
         return false;
     }
 
-    if(!isalpha(lexemme[0])) {
+    TokenType type = token_type_from_string(lexemme);
+
+    if(type == TOK_UNKNOWN) {
         REPORT_ERROR_AT_LINE("Invalid lexemme '%s'\n", lexer->line + 1, lexemme);
         return false;
     }
 
-    TokenType type = token_type_from_string(lexemme);
-    
     if(type == TOK_LABEL || type == TOK_IDENTIFIER) {
         // Subtract one from lexemme length if our token is a label, effectively chopping off the
         // trailing colon
@@ -104,28 +101,9 @@ static bool collect_token(Lexer* lexer) {
         return true;
     }
 
-    // Push operation (must be preceded by a number literal)
-    if(type == TOK_PUSH) {
-        if(!skip_whitespace(lexer)) {
-            REPORT_ERROR_AT_LINE("Expected number after push operation, found end of file instead\n", lexer->line + 1);
-        }
-
-        if(!get_lexemme(lexer, lexemme)) {
-            REPORT_ERROR_AT_LINE("Lexemme surpassed maximum length of %u\n", lexer->line + 1, MAX_LEXEMME_LEN - 1);
-            skip_lexemme(lexer);
-            return false;
-        }
-        
-        const size_t lexemme_len = strlen(lexemme);
-        for(size_t i = 0; i < lexemme_len; ++i) {
-            if(!isdigit(lexemme[i])) {
-                REPORT_ERROR_AT_LINE("Expected number after push operation, found '%s' instead\n", lexer->line + 1, lexemme);
-                return false;
-            }
-        }
-
+    if(type == TOK_NUMBER) {
         const int int_val = atoi(lexemme);
-        if(int_val > USHRT_MAX) {
+        if(int_val > UINT16_MAX) {
             REPORT_ERROR_AT_LINE("Number literal %u is too large\n", lexer->line + 1, int_val);
             return false;
         }

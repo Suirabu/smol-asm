@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -11,7 +12,6 @@ typedef struct {
 
 static TypeStringPair type_string_pairs[] = {
     { TOK_NOP, "nop" },
-    { TOK_PUSH, "push" },
     { TOK_DROP, "drop" },
     { TOK_DUP, "dup" },
     { TOK_SWAP, "swap" },
@@ -40,12 +40,52 @@ static TypeStringPair type_string_pairs[] = {
     { TOK_JLE, "jle" },
     { TOK_JGT, "jgt" },
     { TOK_JGE, "jgt" },
+
+    { TOK_PUSH, "push" }
 };
 const size_t type_string_pairs_len = sizeof(type_string_pairs) / sizeof(TypeStringPair);
 
+static bool is_identifier(const char* lexemme) {
+    if(!isalpha(*lexemme)) {
+        return false;
+    }
+
+    while(*lexemme != '\0') {
+        if(!isalpha(*lexemme++)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static bool is_label(const char* lexemme) {
     const size_t lexemme_len = strlen(lexemme);
-    return lexemme[lexemme_len - 1] == ':';
+    if(lexemme[lexemme_len - 1] != ':') {
+        return false;
+    }
+    
+    if(!isalpha(*lexemme)) {
+        return false;
+    }
+
+    for(size_t i = 0; i < lexemme_len - 1; ++i) {
+        if(!isalnum(lexemme[i])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool is_number(const char* lexemme) {
+    while(*lexemme != '\0') {
+        if(!isdigit(*lexemme++)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 TokenType token_type_from_string(const char* str) {
@@ -56,7 +96,15 @@ TokenType token_type_from_string(const char* str) {
         }
     }
 
-    return is_label(str) ? TOK_LABEL : TOK_IDENTIFIER;
+    if(is_number(str)) {
+        return TOK_NUMBER;
+    } else if(is_label(str)) {
+        return TOK_LABEL;
+    } else if(is_identifier(str)) {
+        return TOK_IDENTIFIER;
+    }
+
+    return TOK_UNKNOWN;
 }
 
 const char* token_string_from_type(TokenType type) {
