@@ -28,11 +28,14 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    if(!codegen_generate_binary("out.smol", tokens)) {
+    codegen_init("out.smol");
+    if(!codegen_generate_binary(tokens)) {
+        codegen_deinit();
         lexer_free_tokens(&lexer);
         return EXIT_FAILURE;
     }
 
+    codegen_deinit();
     lexer_free_tokens(&lexer);
     return EXIT_SUCCESS;
 }
