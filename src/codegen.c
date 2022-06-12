@@ -62,8 +62,37 @@ bool codegen_generate_binary(Token *tokens) {
                     write_char_to_output_file(msb);
                     write_char_to_output_file(lsb);
                 }
-             
                 break;
+            }
+            
+            case TOK_JMP:
+            case TOK_JEQ:
+            case TOK_JNE:
+            case TOK_JLT:
+            case TOK_JLE:
+            case TOK_JGT:
+            case TOK_JGE:
+            {
+                const Token number = *tokens++;
+
+                if(number.type != TOK_NUMBER) {
+                    REPORT_ERROR_AT_LINE("Expected number literal after keyword '%s', found '%s' instead\n",
+                        number.line + 1,
+                        token_string_from_type(type),
+                        token_string_from_type(number.type)
+                    );
+                    has_error = true;
+                    break;
+                }
+
+                write_char_to_output_file(type);
+
+                uint8_t msb = (number.int_val & 0xFF00) >> 8;
+                uint8_t lsb = number.int_val & 0x00FF;
+                write_char_to_output_file(msb);
+                write_char_to_output_file(lsb);
+                break;
+
             }
 
             case TOK_LABEL:
