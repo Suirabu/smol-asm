@@ -34,8 +34,18 @@ static bool skip_whitespace(Lexer* lexer) {
     return !reached_end(lexer);
 }
 
+// Returns false if null character is encountered, otherwise true
 static bool skip_lexemme(Lexer* lexer) {
     while(!reached_end(lexer) && !isspace(peek(lexer))) {
+        advance(lexer);
+    }
+
+    return !reached_end(lexer);
+}
+
+// Returns false if null character is encountered, otherwise true
+static bool skip_line(Lexer* lexer) {
+    while(!reached_end(lexer) && peek(lexer) != '\n') {
         advance(lexer);
     }
 
@@ -51,7 +61,7 @@ static void append_token(Lexer* lexer, Token token) {
 static bool get_lexemme(Lexer* lexer, char lexemme[MAX_LEXEMME_LEN]) {
     size_t lp = 0;
 
-    while(!reached_end(lexer) && !isspace(peek(lexer)) && lp < MAX_LEXEMME_LEN - 1) {
+    while(!reached_end(lexer) && !isspace(peek(lexer)) && peek(lexer) != ';' && lp < MAX_LEXEMME_LEN - 1) {
         lexemme[lp++] = advance(lexer);
     }
 
@@ -134,7 +144,9 @@ Token* lexer_collect_tokens(Lexer* lexer) {
             break;  // Reached end of file
         }
 
-        if(!collect_token(lexer)) {
+        if(peek(lexer) == ';') {
+            skip_line(lexer);
+        } else if(!collect_token(lexer)) {
             contains_error = true;
         }
     }
