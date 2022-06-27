@@ -104,7 +104,7 @@ static bool collect_token(Lexer* lexer) {
 
         Token token = {
             .type = type,
-            .str_val = lexemme_buffer,
+            .lexemme = lexemme_buffer,
             .line = lexer->line,
         };
         append_token(lexer, token);
@@ -120,7 +120,7 @@ static bool collect_token(Lexer* lexer) {
 
         Token token = {
             .type = type,
-            .int_val = int_val,
+            .val = int_val,
             .line = lexer->line,
         };
         append_token(lexer, token);
@@ -129,6 +129,7 @@ static bool collect_token(Lexer* lexer) {
 
     Token token = {
         .type = type,
+        .lexemme = lexemme,
         .line = lexer->line,
     };
     append_token(lexer, token);
@@ -168,8 +169,9 @@ Token* lexer_collect_tokens(Lexer* lexer) {
 void lexer_free_tokens(Lexer* lexer) {
     for(size_t i = 0; i < lexer->tokens_len; ++i) {
         const Token token = lexer->tokens[i];
-        if(token.type == TOK_LABEL) {
-            free(token.str_val);
+
+        if(token.type == TOK_LABEL || token.type == TOK_IDENTIFIER) {
+            free(token.lexemme);
         }
     }
     free(lexer->tokens);

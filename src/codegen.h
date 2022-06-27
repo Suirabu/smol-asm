@@ -4,10 +4,11 @@
 #include <stdbool.h>
 
 #include "token.h"
+#include "instruction.h"
 
 bool codegen_init(const char* output_path);
 void codegen_deinit(void);
 
-bool codegen_generate_binary(Token* tokens);
+void codegen_generate_binary(Instruction* instructions, size_t len);
 
 #endif // CODEGEN_H
