@@ -10,25 +10,66 @@
 #include "token.h"
 
 static Instruction* instructions = NULL;
+static StrMap map = { 0 };
 
-void append_instruction(Instruction inst, size_t len) {
+static void append_instruction(Instruction inst, size_t len) {
     instructions = realloc(instructions, len * sizeof(Instruction));
     assert(instructions != NULL);
     instructions[len - 1] = inst;
 }
 
+static void collect_constants(Token* tokens) {
+    uint16_t pc = 0x2000;
+
+    while(tokens->type != TOK_EOF) {
+        const Token token = *tokens++;
+
+        while(tokens->type != TOK_EOF) {
+            Token token = *tokens++;
+
+            switch(token.type) {
+                // pc += 0
+                case TOK_LABEL:
+                    strmap_add(&map, token.lexemme, pc);
+                    break;
+                case TOK_NUMBER:
+                case TOK_IDENTIFIER:
+                    break;
+
+                // pc += 2 : 3
+                case TOK_PUSH:
+                case TOK_JMP:
+                case TOK_JEQ:
+                case TOK_JNE:
+                case TOK_JLT:
+                case TOK_JLE:
+                case TOK_JGT:
+                case TOK_JGE: {
+                    const Opcode opcode = opcode_from_token(token);
+                    pc += opcode == OP_PUSH_8 ? 2 : 3;
+                    break;
+                }
+
+                // pc += 1
+                default:
+                    ++pc;
+                    break;
+            }
+        }
+    }
+}
+
 ParseResult parse_tokens(Token* tokens) {
     size_t instructions_len = 0;
-    StrMap map = { 0 };
-    uint16_t pc = 0x2000;
     bool has_error = false;
+
+    collect_constants(tokens);
 
     while(tokens->type != TOK_EOF) {
         Token token = *tokens++;
 
         switch(token.type) {
             case TOK_LABEL:
-                strmap_add(&map, token.lexemme, pc);
                 break;
             case TOK_IDENTIFIER:
                 REPORT_ERROR_AT_LINE("Unexpected identifier '%s'\n", token.line + 1, token.lexemme);
@@ -48,7 +89,6 @@ ParseResult parse_tokens(Token* tokens) {
             case TOK_JGT:
             case TOK_JGE: {
                 const Opcode opcode = opcode_from_token(token);
-                pc += opcode == OP_PUSH_8 ? 2 : 3;
 
                 Token operand_token = *tokens++;
                 if(operand_token.type != TOK_IDENTIFIER && operand_token.type != TOK_NUMBER) {
@@ -87,7 +127,6 @@ ParseResult parse_tokens(Token* tokens) {
             }
 
             default:
-                ++pc;
                 append_instruction((Instruction) { .opcode = opcode_from_token(token) }, ++instructions_len);
                 break;
         }
