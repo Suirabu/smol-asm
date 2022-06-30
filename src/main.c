@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "args.h"
 #include "codegen.h"
 #include "error.h"
 #include "lexer.h"
@@ -11,14 +12,18 @@
 #include "strmap.h"
 
 int main(int argc, char** argv) {
-    if(argc < 2) {
+    Options options = args_parse(argc, argv);
+    if(!options.input_path) {
         REPORT_ERROR("No input file provided\n");
         return EXIT_FAILURE;
     }
 
-    const char* source_path = argv[1];
-    
-    char* source = util_get_file_contents(source_path);
+    // Set output path if not already set
+    if(!options.output_path) {
+        options.output_path = "out.smol";
+    }
+
+    char* source = util_get_file_contents(options.input_path);
     if(!source) {
         return EXIT_FAILURE;
     }
@@ -38,7 +43,7 @@ int main(int argc, char** argv) {
     }
     lexer_free_tokens(&lexer);
 
-    codegen_init("out.smol");
+    codegen_init(options.output_path);
     codegen_generate_binary(parse_result.instructions, parse_result.len);
     free_instructions();
     codegen_deinit();
